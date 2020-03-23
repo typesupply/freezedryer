@@ -40,8 +40,10 @@ Freeze Dryer doesn't require a standard project structure (see the reference sec
   	more secrets.md
   /archive <- this is the archive
   	/2020-03-15-04-02 <- this is a state
+  		2020-03-15-04-02 glyphs.pdf
   		sketch.ufo
   	/2020-03-22-19-01 <- this is another state
+  		2020-03-22-19-01 glyphs.pdf
   		light sketch.ufo
   		bold sketch.ufo
   		/proofs
@@ -88,3 +90,4 @@ States will be stored in a time stamped directory. The time stamp is in Coordina
 The following files will be written as needed:
 
 - (time stamp) message.txt (optional): This will contain a message given by the user during commit.
+- (time stamp) glyphs.txt (optional): This will contain a proof of all glyphs in all UFOs in the state.

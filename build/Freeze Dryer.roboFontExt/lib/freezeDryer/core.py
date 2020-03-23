@@ -11,6 +11,7 @@ def getDefaultSettings(root):
     settings = dict(
         formatVersion=0,
         compressUFOs=False,
+        makeGlyphSetProof=True,
         archiveDirectory=getDefaultArchiveDirectory(root)
     )
     return settings
@@ -24,9 +25,8 @@ def haveSettings(root):
 
 def readSettings(root):
     path = getSettingsPath(root)
-    settings = plistlib.readPlist(path)
-    if settings.get("archiveDirectory") is None:
-        settings["archiveDirectory"] = getDefaultArchiveDirectory(root)
+    settings = getDefaultSettings(root)
+    settings.update(plistlib.readPlist(path))
     return settings
 
 def writeSettings(root, settings):
@@ -126,6 +126,11 @@ def performCommit(root, stamp, message=None):
     # compress UFOs
     if settings["compressUFOs"]:
         recursivelyCompressUFOs(stateDirectory)
+    # make the proofs
+    if settings["makeGlyphSetProof"]:
+        from freezeDryer import proof
+        proof.makeGlyphSetProof(stateDirectory, stamp)
+
 
 # -----
 # Tools
@@ -170,20 +175,22 @@ def gatherProjectContentPaths(root):
 # UFO Compression
 # ---------------
 
-def recursivelyCompressUFOs(directory):
-    paths = gatherUFOPaths(directory)
-    for path in paths:
-        convertUFOToUFOZ(path)
-
 def gatherUFOPaths(directory):
     ufos = []
     for fileName in os.listdir(directory):
         path = os.path.join(directory, fileName)
-        if os.path.splitext(fileName)[-1].lower() == ".ufo":
+        if os.path.splitext(fileName)[-1].lower() in (".ufo", ".ufoz"):
             ufos.append(path)
         elif os.path.isdir(path):
             ufos += gatherUFOPaths(path)
     return ufos
+
+def recursivelyCompressUFOs(directory):
+    paths = gatherUFOPaths(directory)
+    for path in paths:
+        if os.path.splitext(path)[-1].lower() == ".ufoz":
+            continue
+        convertUFOToUFOZ(path)
 
 def convertUFOToUFOZ(path):
     ufozPath = os.path.splitext(path)[0] + ".ufoz"

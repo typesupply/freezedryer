@@ -135,6 +135,12 @@ class ProjectWindowController(BaseWindowController):
             value=self.settings["compressUFOs"],
             callback=self.settingsCompressUFOsCheckBoxCallback
         )
+        self.w.settingsTab.makeGlyphSetProofCheckBox = vanilla.CheckBox(
+            "auto",
+            "Make Glyph Set Proof",
+            value=self.settings["makeGlyphSetProof"],
+            callback=self.settingsMakeGlyphSetProofCheckBoxCallback
+        )
 
         rules = [
             "H:|-margin-[archiveLocationTitle]-margin-|",
@@ -144,6 +150,7 @@ class ProjectWindowController(BaseWindowController):
             "H:|-margin-[filesTitle]-margin-|",
             "H:|-margin-[filesLine]-margin-|",
             "H:|-margin-[compressUFOsCheckBox]",
+            "H:|-margin-[makeGlyphSetProofCheckBox]",
 
             "V:|"
                 "-margin-"
@@ -169,6 +176,8 @@ class ProjectWindowController(BaseWindowController):
                 "[filesLine]"
                 "-padding-"
                 "[compressUFOsCheckBox]"
+                "-padding-"
+                "[makeGlyphSetProofCheckBox]"
         ]
         self.w.settingsTab.addAutoPosSizeRules(rules, metrics)
 
@@ -197,7 +206,7 @@ class ProjectWindowController(BaseWindowController):
         message = self.w.commitTab.messageTextEditor.get()
         if not message:
             message = None
-        progress = self.startProgress("Preforming commit...")
+        progress = self.startProgress("Performing commit...")
         try:
             core.performCommit(self.root, timeStamp, message)
         finally:
@@ -234,4 +243,8 @@ class ProjectWindowController(BaseWindowController):
 
     def settingsCompressUFOsCheckBoxCallback(self, sender):
         self.settings["compressUFOs"] = sender.get()
+        self._storeSettings()
+
+    def settingsMakeGlyphSetProofCheckBoxCallback(self, sender):
+        self.settings["makeGlyphSetProofCheckBox"] = sender.get()
         self._storeSettings()
