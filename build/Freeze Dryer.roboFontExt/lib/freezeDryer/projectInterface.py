@@ -81,6 +81,10 @@ class ProjectWindowController(BaseWindowController):
         self.w.commitTab.messageTextEditor = vanilla.TextEditor(
             "auto"
         )
+        self.w.commitTab.ignoredTextEditor = vanilla.TextEditor(
+            "auto",
+            readOnly=True
+        )
         self.w.commitTab.commitButton = vanilla.Button(
             "auto",
             "Commit State",
@@ -89,10 +93,13 @@ class ProjectWindowController(BaseWindowController):
 
         rules = [
             "H:|-margin-[messageTextEditor]-margin-|",
+            "H:|-margin-[ignoredTextEditor]-margin-|",
             "H:[commitButton]-margin-|",
             "V:|"
                 "-margin-"
                 "[messageTextEditor]"
+                "-padding-"
+                "[ignoredTextEditor(==150)]"
                 "-padding-"
                 "[commitButton]"
                 "-margin-"
@@ -141,6 +148,15 @@ class ProjectWindowController(BaseWindowController):
             value=self.settings["makeGlyphSetProof"],
             callback=self.settingsMakeGlyphSetProofCheckBoxCallback
         )
+        self.w.settingsTab.ignoreTitle = vanilla.TextBox(
+            "auto",
+            "Ignore:"
+        )
+        self.w.settingsTab.ignoreTextEditor = vanilla.TextEditor(
+            "auto",
+            "\n".join(self.settings["ignore"]),
+            callback=self.settingsIgnoreTextEditorCallback
+        )
 
         rules = [
             "H:|-margin-[archiveLocationTitle]-margin-|",
@@ -151,6 +167,8 @@ class ProjectWindowController(BaseWindowController):
             "H:|-margin-[filesLine]-margin-|",
             "H:|-margin-[compressUFOsCheckBox]",
             "H:|-margin-[makeGlyphSetProofCheckBox]",
+            "H:|-margin-[ignoreTitle]-margin-|",
+            "H:|-margin-[ignoreTextEditor]-margin-|",
 
             "V:|"
                 "-margin-"
@@ -178,6 +196,10 @@ class ProjectWindowController(BaseWindowController):
                 "[compressUFOsCheckBox]"
                 "-padding-"
                 "[makeGlyphSetProofCheckBox]"
+                "-padding-"
+                "[ignoreTitle]"
+                "-padding-"
+                "[ignoreTextEditor(==100)]"
         ]
         self.w.settingsTab.addAutoPosSizeRules(rules, metrics)
 
@@ -185,6 +207,7 @@ class ProjectWindowController(BaseWindowController):
         # Go
         # --
 
+        self.updateIgnoredTextEditor()
         self.w.center()
         self.w.open()
 
@@ -212,6 +235,17 @@ class ProjectWindowController(BaseWindowController):
         finally:
             progress.close()
             self.w.commitTab.messageTextEditor.set("")
+
+    def updateIgnoredTextEditor(self):
+        ignorePatterns = self.settings["ignore"]
+        ignoredPaths = core.gatherIgnoredPaths(self.root, ignorePatterns)
+        if not ignoredPaths:
+            text = "No files will be ignored."
+        else:
+            text = ["Ignored Files:"]
+            text += [os.path.relpath(path, self.root) for path in ignoredPaths]
+            text = "\n".join(text)
+        self.w.commitTab.ignoredTextEditor.set(text)
 
     # --------
     # Settings
@@ -246,5 +280,11 @@ class ProjectWindowController(BaseWindowController):
         self._storeSettings()
 
     def settingsMakeGlyphSetProofCheckBoxCallback(self, sender):
-        self.settings["makeGlyphSetProofCheckBox"] = sender.get()
+        self.settings["makeGlyphSetProof"] = sender.get()
         self._storeSettings()
+
+    def settingsIgnoreTextEditorCallback(self, sender):
+        patterns = [line.strip() for line in sender.get().splitlines() if line.strip()]
+        self.settings["ignore"] = patterns
+        self._storeSettings()
+        self.updateIgnoredTextEditor()

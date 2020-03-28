@@ -1,5 +1,6 @@
 import os
 import shutil
+import glob
 import time
 import plistlib
 
@@ -12,7 +13,8 @@ def getDefaultSettings(root):
         formatVersion=0,
         compressUFOs=False,
         makeGlyphSetProof=True,
-        archiveDirectory=getDefaultArchiveDirectory(root)
+        archiveDirectory=getDefaultArchiveDirectory(root),
+        ignore=getDefaultIgnorePatterns()
     )
     return settings
 
@@ -33,17 +35,29 @@ def writeSettings(root, settings):
     settings = dict(settings)
     if settings["archiveDirectory"] == getDefaultArchiveDirectory(root):
         del settings["archiveDirectory"]
+    if settings["ignore"] == getDefaultIgnorePatterns():
+        del settings["ignore"]
     path = getSettingsPath(root)
     plistlib.writePlist(settings, path)
 
 def getArchiveDirectory(root, settings):
-    archiveDirectory = settings.get(root)
+    archiveDirectory = settings.get("archiveDirectory")
     if archiveDirectory is None:
         archiveDirectory = getDefaultArchiveDirectory(root)
     return archiveDirectory
 
 def getDefaultArchiveDirectory(root):
     return os.path.join(root, "archive")
+
+def getDefaultIgnorePatterns():
+    patterns = """
+    /archive
+    /ignore
+    *.idlk
+    """
+    patterns = [line.strip() for line in patterns.splitlines() if line.strip()]
+    return patterns
+
 
 # ----------
 # Initialize
@@ -105,17 +119,38 @@ def canPerformCommit(root):
 def performCommit(root, stamp, message=None):
     settings = readSettings(root)
     archiveDirectory = getArchiveDirectory(root, settings)
+    # normalize the paths for safety
+    root = os.path.normpath(root)
+    archiveDirectory = os.path.normpath(archiveDirectory)
     # make the state directory
     stateDirectory = getStatePath(archiveDirectory, stamp)
-    os.mkdir(stateDirectory)
-    # copy files and directories
-    files, directories = gatherProjectContentPaths(root)
-    for sourcePath in files:
-        statePath = os.path.join(stateDirectory, os.path.basename(sourcePath))
-        shutil.copy2(sourcePath, statePath)
-    for sourcePath in directories:
-        statePath = os.path.join(stateDirectory, os.path.basename(sourcePath))
-        shutil.copytree(sourcePath, statePath)
+    # locate files that should be ignored
+    ignorePatterns = settings["ignore"]
+    ignoredPaths = gatherIgnoredPaths(root, ignorePatterns)
+    def ignoreArchiveFunction(path, names):
+        ignore = []
+        for name in names:
+            if path in ignoredPaths:
+                return names
+            p = os.path.join(path, name)
+            if p == archiveDirectory:
+                return [name]
+            if p in ignoredPaths:
+                ignore.append(name)
+        return ignore
+    # copy the whole root to the state directory
+    shutil.copytree(root, stateDirectory, ignore=ignoreArchiveFunction)
+    # remove ignored directories
+    for path in ignoredPaths:
+        base = os.path.relpath(path, root)
+        path = os.path.join(stateDirectory, base)
+        if not os.path.exists(path):
+            continue
+        if os.path.isdir(path):
+            # there shouldn't be anything there,
+            # but fail if there is just to be safe
+            assert not list(os.listdir(path))
+            shutil.rmtree(path)
     # write the message
     if message:
         message = message.encode("utf8")
@@ -130,7 +165,6 @@ def performCommit(root, stamp, message=None):
     if settings["makeGlyphSetProof"]:
         from freezeDryer import proof
         proof.makeGlyphSetProof(stateDirectory, stamp)
-
 
 # -----
 # Tools
@@ -149,27 +183,27 @@ def findRoot(directory, level=0):
         return findRoot(os.path.dirname(directory), level)
     return None
 
-alwaysIgnore = """
-ignore
-archive
-""".strip().splitlines()
-
-def gatherProjectContentPaths(root):
-    files = []
-    directories = []
-    for fileName in os.listdir(root):
-        if fileName.startswith("."):
+def gatherIgnoredPaths(directory, ignorePatterns, level=0):
+    found = []
+    # match file names
+    for pattern in ignorePatterns:
+        if pattern.startswith("/") and level > 0:
             continue
-        if fileName in alwaysIgnore:
-            continue
-        path = os.path.join(root, fileName)
+        elif pattern.startswith("/"):
+            pattern = pattern[1:]
+        fullPattern = os.path.join(directory, pattern)
+        found += glob.glob(fullPattern)
+    # recurse through sub-directories
+    level += 1
+    for fileName in os.listdir(directory):
         if os.path.splitext(fileName)[-1].lower() == ".ufo":
-            directories.append(path)
-        elif os.path.isdir(path):
-            directories.append(path)
-        else:
-            files.append(path)
-    return files, directories
+            continue
+        fullPath = os.path.join(directory, fileName)
+        if fullPath in found:
+            continue
+        if os.path.isdir(fullPath):
+            found += gatherIgnoredPaths(fullPath, ignorePatterns, level)
+    return found
 
 # ---------------
 # UFO Compression

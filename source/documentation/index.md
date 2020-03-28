@@ -64,8 +64,11 @@ If you need to change your project settings, you can do so at any time by sellec
 
 That's all it does. The end.
 
-
 ## Reference
+
+### Ignoring Files
+
+If you want files to be ignored, you can specify them in the settings window. The pattern matching syntax is the same as Python's [glob module](https://docs.python.org/3.5/library/glob.html) syntax. If a pattern starts with `/`  the pattern is relative to the root of the project. Otherwise the pattern may also match at any level within the project.
 
 ### File Structure
 
