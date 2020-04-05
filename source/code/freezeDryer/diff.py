@@ -742,15 +742,6 @@ def diffObject(object1, object2, attributes):
             differences[attr] = dict(value1=value1, value2=value2)
     return differences
 
-# -----
-# Tools
-# -----
-
-def safeGetAttr(obj, attr, fallback=None):
-    if obj is None:
-        return fallback
-    return getattr(obj, attr)
-
 def diffDict(dict1, dict2, ignore=None):
     if ignore is None:
         ignore = []
