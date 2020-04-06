@@ -10,7 +10,8 @@ from fontTools.ufoLib import fontInfoAttributesVersion3
 def diffDirectories(
         root1,
         root2,
-        ignorePaths1=None, ignorePaths2=None,
+        ignorePaths1=None,
+        ignorePaths2=None,
         onlyCompareFontDefaultLayers=True,
         normalizeFontContours=True,
         normalizeFontComponents=True,
@@ -53,7 +54,8 @@ def diffDirectories(
         path1 = os.path.join(root1, path)
         path2 = os.path.join(root2, path)
         different, details = diffFile(
-            path1, path2,
+            path1,
+            path2,
             onlyCompareFontDefaultLayers=onlyCompareFontDefaultLayers,
             normalizeFontContours=normalizeFontContours,
             normalizeFontComponents=normalizeFontComponents,
@@ -91,7 +93,8 @@ def _gatherFiles(directory, ignore):
 # ----
 
 def diffFile(
-        path1, path2,
+        path1,
+        path2,
         onlyCompareFontDefaultLayers=True,
         normalizeFontContours=True,
         normalizeFontComponents=True,
@@ -106,9 +109,9 @@ def diffFile(
     if fileType == "UFO":
         font1 = OpenFont(path1, showInterface=False)
         font2 = OpenFont(path2, showInterface=False)
-        layer = font1.defaultLayer
         different, differences = diffFont(
-            font1, font2,
+            font1,
+            font2,
             onlyCompareDefaultLayers=onlyCompareFontDefaultLayers,
             normalizeContours=normalizeFontContours,
             normalizeComponents=normalizeFontComponents,
@@ -125,13 +128,20 @@ def diffFile(
 # ----
 
 def diffFont(
-        font1, font2,
-        onlyCompareDefaultLayers=False,
+        font1,
+        font2,
+        glifVendor1=None,
+        glifVendor2=None,
+        onlyCompareDefaultLayers=True,
         normalizeContours=True,
         normalizeComponents=True,
         normalizeAnchors=True,
         normalizeGuidelines=True
     ):
+    if glifVendor1 is None:
+        glifVendor1 = makeGLIFVendorFromLayers(font1)
+    if glifVendor2 is None:
+        glifVendor2 = makeGLIFVendorFromLayers(font2)
     # basic attributes
     differences = diffObject(
         font1,
@@ -168,7 +178,10 @@ def diffFont(
         differences["lib"] = lib
     # layers
     layers = diffLayers(
-        font1, font2,
+        font1,
+        font2,
+        glifVendor1=glifVendor1,
+        glifVendor2=glifVendor2,
         onlyCompareDefaultLayers=onlyCompareDefaultLayers,
         normalizeContours=normalizeContours,
         normalizeComponents=normalizeComponents,
@@ -179,6 +192,32 @@ def diffFont(
         differences["layers"] = layers
     different = bool(differences)
     return different, differences
+
+def makeGLIFVendorFromLayers(font):
+    # XXX
+    # this uses private stuff in defcon.
+    try:
+        import defcon
+    except ImportError:
+        return {}
+    vendor = {}
+    if hasattr(font, "naked") and isinstance(font.naked(), defcon.Font):
+        for layer in font.layers:
+            nakedLayer = layer.naked()
+            glyphSet = nakedLayer._glyphSet
+            if glyphSet is None:
+                continue
+            layerName = layer.name
+            for glyphName in layer.keys():
+                # if the glyph object is already loaded,
+                # don't get the GLIF because the object
+                # is considered to be the truth.
+                if glyphName in nakedLayer._glyphs:
+                    pass
+                else:
+                    glif = glyphSet.getGLIF(glyphName)
+                    vendor[layerName, glyphName] = glif
+    return vendor
 
 # ----
 # Info
@@ -251,13 +290,20 @@ def diffLib(lib1, lib2, ignore=None):
 # ------
 
 def diffLayers(
-        font1, font2,
-        onlyCompareDefaultLayers=False,
+        font1,
+        font2,
+        glifVendor1=None,
+        glifVendor2=None,
+        onlyCompareDefaultLayers=True,
         normalizeContours=True,
         normalizeComponents=True,
         normalizeAnchors=True,
         normalizeGuidelines=True
     ):
+    if glifVendor1 is None:
+        glifVendor1 = {}
+    if glifVendor2 is None:
+        glifVendor2 = {}
     differences = dict(changed={})
     # name
     defaultLayer1 = font1.defaultLayer
@@ -267,12 +313,21 @@ def diffLayers(
     if defaultLayerName1 != defaultLayerName2:
         differences["defaultLayer"] = (defaultLayerName1, defaultLayerName2)
     # contents
-    layerDifferences = diffLayer(defaultLayer1, defaultLayer2)
+    layerDifferences = diffLayer(
+        defaultLayer1,
+        defaultLayer2,
+        glifVendor1=glifVendor1,
+        glifVendor2=glifVendor2,
+        normalizeContours=normalizeContours,
+        normalizeComponents=normalizeComponents,
+        normalizeAnchors=normalizeAnchors,
+        normalizeGuidelines=normalizeGuidelines
+    )
     if layerDifferences:
         differences["changed"][None] = layerDifferences
     if not onlyCompareDefaultLayers:
-        layerNames1 = set(font1.layerOrder)
-        layerNames2 = set(font2.layerOrder)
+        layerNames1 = set([layerName for layerName in font1.layerOrder if layerName != font1.defaultLayer.name])
+        layerNames2 = set([layerName for layerName in font2.layerOrder if layerName != font2.defaultLayer.name])
         added = layerNames2 - layerNames1
         if added:
             differences["added"] = {layerName : font2.getLayer(layerName) for layerName in added}
@@ -285,7 +340,10 @@ def diffLayers(
             layer1 = font1.getLayer(name)
             layer2 = font2.getLayer(name)
             layerDifferences = diffLayer(
-                layer1, layer2,
+                layer1,
+                layer2,
+                glifVendor1=glifVendor1,
+                glifVendor2=glifVendor2,
                 normalizeContours=normalizeContours,
                 normalizeComponents=normalizeComponents,
                 normalizeAnchors=normalizeAnchors,
@@ -302,12 +360,19 @@ def diffLayers(
 # -----
 
 def diffLayer(
-        layer1, layer2,
+        layer1,
+        layer2,
+        glifVendor1=None,
+        glifVendor2=None,
         normalizeContours=True,
         normalizeComponents=True,
         normalizeAnchors=True,
         normalizeGuidelines=True
     ):
+    if glifVendor1 is None:
+        glifVendor1 = {}
+    if glifVendor2 is None:
+        glifVendor2 = {}
     # basic attributes
     differences = diffObject(
         layer1,
@@ -333,17 +398,27 @@ def diffLayer(
         glyphsDifferences["removed"] = list(sorted(removed))
     common = glyphNames1 & glyphNames2
     for glyphName in common:
-        glyph1 = layer1[glyphName]
-        glyph2 = layer2[glyphName]
-        glyphDifferences = diffGlyph(
-            glyph1, glyph2,
-            normalizeContours=normalizeContours,
-            normalizeComponents=normalizeComponents,
-            normalizeAnchors=normalizeAnchors,
-            normalizeGuidelines=normalizeGuidelines
-        )
-        if glyphDifferences:
-            glyphsDifferences["changed"][glyphName] = glyphDifferences
+        needGlyphObjects = False
+        glif1 = glifVendor1.get((layer1.name, glyphName))
+        glif2 = glifVendor2.get((layer2.name, glyphName))
+        if glif1 is None:
+            needGlyphObjects = True
+        elif glif2 is None:
+            needGlyphObjects = True
+        elif glif1 != glif2:
+            needGlyphObjects = True
+        if needGlyphObjects:
+            glyph1 = layer1[glyphName]
+            glyph2 = layer2[glyphName]
+            glyphDifferences = diffGlyph(
+                glyph1, glyph2,
+                normalizeContours=normalizeContours,
+                normalizeComponents=normalizeComponents,
+                normalizeAnchors=normalizeAnchors,
+                normalizeGuidelines=normalizeGuidelines
+            )
+            if glyphDifferences:
+                glyphsDifferences["changed"][glyphName] = glyphDifferences
     if not glyphsDifferences["changed"]:
         del glyphsDifferences["changed"]
     if glyphsDifferences:
