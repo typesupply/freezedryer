@@ -8,7 +8,8 @@ from fontTools.ufoLib import fontInfoAttributesVersion3
 # ---------
 
 def diffDirectories(
-        root1, root2,
+        root1,
+        root2,
         ignorePaths1=None, ignorePaths2=None,
         onlyCompareFontDefaultLayers=True,
         normalizeFontContours=True,
@@ -63,6 +64,8 @@ def diffDirectories(
             changed[path] = details
     # compile and return
     differences = dict(
+        root1=root1,
+        root2=root2,
         added=added,
         removed=removed,
         changed=changed
