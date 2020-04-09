@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<glyph name="attributeschanged" format="2">
+	<advance width="100"/>
+	<lib>
+		<dict>
+			<key>com.typesupply.test.added</key>
+			<array>
+				<string>A</string>
+				<string>D</string>
+				<string>D</string>
+				<string>E</string>
+				<string>D</string>
+			</array>
+			<key>com.typesupply.test.changed</key>
+			<array>
+				<string>c</string>
+				<string>h</string>
+				<string>a</string>
+				<string>n</string>
+				<string>g</string>
+				<string>e</string>
+				<string>d</string>
+			</array>
+		</dict>
+	</lib>
+	<note>
+		THIS IS THE NOTE!
+	</note>
+</glyph>

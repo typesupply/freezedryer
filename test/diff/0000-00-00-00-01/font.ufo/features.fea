@@ -1,0 +1,7 @@
+feature ADDD {
+    sub foo by bar;
+} ADDD;
+
+feature CHNG {
+    sub bar by foo;
+} CHNG;

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<glyph name="componentadded" format="2">
+	<advance width="600"/>
+	<outline>
+		<component base="componentbase1" yOffset="-1"/>
+	</outline>
+</glyph>

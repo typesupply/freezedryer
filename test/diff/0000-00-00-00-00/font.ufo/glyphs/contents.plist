@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+	<dict>
+		<key>anchors</key>
+		<string>anchors.glif</string>
+		<key>attributeschanged</key>
+		<string>attributeschanged.glif</string>
+		<key>componentadded</key>
+		<string>componentadded.glif</string>
+		<key>componentbase1</key>
+		<string>componentbase1.glif</string>
+		<key>componentbase2</key>
+		<string>componentbase2.glif</string>
+		<key>componentchanged</key>
+		<string>componentchanged.glif</string>
+		<key>componentremoved</key>
+		<string>componentremoved.glif</string>
+		<key>componentsame</key>
+		<string>componentsame.glif</string>
+		<key>contouradded</key>
+		<string>contouradded.glif</string>
+		<key>contourchanged</key>
+		<string>contourchanged.glif</string>
+		<key>contourremoved</key>
+		<string>contourremoved.glif</string>
+		<key>contoursame</key>
+		<string>contoursame.glif</string>
+		<key>pointadded</key>
+		<string>pointadded.glif</string>
+		<key>pointchanged</key>
+		<string>pointchanged.glif</string>
+		<key>pointremoved</key>
+		<string>pointremoved.glif</string>
+		<key>removed</key>
+		<string>removed.glif</string>
+	</dict>
+</plist>

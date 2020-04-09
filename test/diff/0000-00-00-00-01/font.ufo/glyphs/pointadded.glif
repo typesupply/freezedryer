@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<glyph name="pointadded" format="2">
+	<advance width="600"/>
+	<outline>
+		<contour>
+			<point x="0" y="0" type="line"/>
+			<point x="300" y="0" type="line"/>
+			<point x="300" y="300" type="line"/>
+			<point x="150" y="300" type="line"/>
+			<point x="0" y="300" type="line"/>
+		</contour>
+		<contour>
+			<point x="450" y="300" type="curve" smooth="yes"/>
+			<point x="533" y="300"/>
+			<point x="600" y="368"/>
+			<point x="600" y="450" type="curve" smooth="yes"/>
+			<point x="600" y="533"/>
+			<point x="533" y="600"/>
+			<point x="450" y="600" type="curve" smooth="yes"/>
+			<point x="368" y="600"/>
+			<point x="300" y="533"/>
+			<point x="300" y="450" type="curve" smooth="yes"/>
+			<point x="300" y="368"/>
+			<point x="368" y="300"/>
+		</contour>
+	</outline>
+	<lib>
+		<dict>
+			<key>com.typesupply.PasteGlyph.lastPastedGlyphName</key>
+			<string>contoursame</string>
+		</dict>
+	</lib>
+</glyph>

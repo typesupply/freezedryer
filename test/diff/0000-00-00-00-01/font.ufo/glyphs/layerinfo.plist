@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+	<dict>
+		<key>color</key>
+		<string>1,0.75,0,0.7</string>
+		<key>lib</key>
+		<dict>
+			<key>org.unifiedfontobject.normalizer.imageReferences</key>
+			<dict>
+			</dict>
+			<key>org.unifiedfontobject.normalizer.modTimes</key>
+			<string>version: 0.3.1
+1586447094.5 added.glif
+1586447220.8 anchors.glif
+1586443442.3 attributeschanged.glif
+1586389372.8 componentA_dded.glif
+1586389372.8 componentB_ase1.glif
+1586389372.8 componentB_ase2.glif
+1586389372.8 componentC_hanged.glif
+1586389372.8 componentR_emoved.glif
+1586389372.8 componentS_ame.glif
+1586390441.3 componentadded.glif
+1586390410.9 componentbase1.glif
+1586390410.9 componentbase2.glif
+1586390441.3 componentchanged.glif
+1586390449.5 componentremoved.glif
+1586391394.3 componentsame.glif
+1586389456.5 conntourC_hanged.glif
+1586390199.0 conntourchanged.glif
+1586389456.5 contourA_dded.glif
+1586389456.5 contourR_emoved.glif
+1586389456.5 contourS_ame.glif
+1586390199.0 contouradded.glif
+1586395445.9 contourchanged.glif
+1586390199.0 contourremoved.glif
+1586390199.0 contoursame.glif
+1586395726.8 pointadded.glif
+1586395715.6 pointchanged.glif
+1586395720.7 pointremoved.glif</string>
+		</dict>
+	</dict>
+</plist>

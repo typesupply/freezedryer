@@ -1,0 +1,7 @@
+feature CHNG {
+    sub foo by bar;
+} CHNG;
+
+feature RMVD {
+    sub foo by bar;
+} RMVD;

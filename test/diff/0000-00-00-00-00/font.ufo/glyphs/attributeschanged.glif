@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<glyph name="attributeschanged" format="2">
+	<unicode hex="00A0"/>
+	<advance width="500"/>
+	<lib>
+		<dict>
+			<key>com.typesupply.test.changed</key>
+			<array>
+				<string>C</string>
+				<string>H</string>
+				<string>A</string>
+				<string>N</string>
+				<string>G</string>
+				<string>E</string>
+				<string>D</string>
+			</array>
+			<key>com.typesupply.test.removed</key>
+			<array>
+				<string>R</string>
+				<string>E</string>
+				<string>M</string>
+				<string>O</string>
+				<string>V</string>
+				<string>E</string>
+				<string>D</string>
+			</array>
+		</dict>
+	</lib>
+	<note>
+		This is the note.
+	</note>
+</glyph>
