@@ -55,6 +55,7 @@ class FDProjectsWindowController(BaseWindowController):
         # -------
 
         self.w.tabsContainer = vanilla.Group("auto")
+        self.w.tabsContainer.line = vanilla.HorizontalLine("auto")
         self.w.tabsContainer.flex1 = vanilla.Group("auto")
         self.w.tabsContainer.tabsButtons = vanilla.SegmentedButton(
             "auto",
@@ -184,6 +185,7 @@ class FDProjectsWindowController(BaseWindowController):
         metrics = dict(
             margin=15,
             padding=10,
+            vButtonCenter=25,
             sectionPadding=30,
             indent=20
         )
@@ -201,10 +203,14 @@ class FDProjectsWindowController(BaseWindowController):
         # Project
 
         rules = [
+            "H:|[line]|",
             "H:|-[flex1]-[tabsButtons]-[flex2(==flex1)]-|",
             "H:|[commitTab]|",
             "H:|[diffsTab]|",
             "H:|[settingsTab]|",
+            "V:|"
+                "-vButtonCenter-"
+                "[line]",
             "V:|"
                 "-margin-"
                 "[tabsButtons]",
