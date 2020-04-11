@@ -526,7 +526,8 @@ class FDProjectsWindowController(BaseWindowController):
             normalize=self.diffsTab.lenientCheckBox.get(),
             onlyCompareFontDefaultLayers=self.diffsTab.onlyDefaultLayerCheckBox.get()
         )
-        FDDiffWindowController(report)
+        fileName = "%s - %s diffs.html" % (state1, state2)
+        FDDiffWindowController(report, self.root, fileName)
 
     # Settings
     # --------
@@ -611,8 +612,48 @@ class FDProjectsWindowController(BaseWindowController):
 
 class FDDiffWindowController(BaseWindowController):
 
-    def __init__(self, html):
+    def __init__(self, html, directory, fileName):
+        self.html = html
+        self.directory = directory
+        self.fileName = fileName
+
         self.w = vanilla.Window((800, 500), minSize=(200, 200))
-        self.w.htmlView = HTMLView((0, 0, 0, 0))
+        self.w.htmlView = HTMLView("auto")
         self.w.htmlView.setHTML(html)
+        self.w.saveButton = vanilla.Button(
+            "auto",
+            "Save",
+            callback=self.saveButtonCallback
+        )
+
+        metrics = dict(
+            margin=15,
+            padding=10
+        )
+        rules = [
+            "H:|[htmlView]|",
+            "H:[saveButton]-margin-|",
+            "V:|"
+                "[htmlView]"
+                "-padding-"
+                "[saveButton]"
+                "-margin-"
+                "|"
+        ]
+        self.w.addAutoPosSizeRules(rules, metrics)
+
         self.w.open()
+
+    def saveButtonCallback(self, sender):
+        self.showPutFile(
+            ["html"],
+            callback=self._saveButtonCallback,
+            fileName=self.fileName,
+            directory=self.directory
+        )
+
+    def _saveButtonCallback(self, result):
+        if result:
+            f = open(result, "w")
+            f.write(self.html)
+            f.close()
