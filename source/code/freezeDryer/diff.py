@@ -41,6 +41,7 @@ def diffDirectories(
     added = []
     removed = []
     common = []
+    ufos = {}
     allPaths = set(paths1) | set(paths2)
     for path in sorted(allPaths):
         if path in paths1 and path not in paths2:
@@ -49,11 +50,28 @@ def diffDirectories(
             added.append(path)
         else:
             common.append(path)
+    # catch UFOs that were compressed on commit
+    pairedUFOs = []
+    for path in removed:
+        base, ext = os.path.splitext(path)
+        # XXX this assumes that the extensions will be all lowercase
+        if ext == ".ufoz":
+            if base + ".ufo" in added:
+                pairedUFOs.append((path, base + ".ufo"))
+    common.extend(pairedUFOs)
+    for before, after in pairedUFOs:
+        removed.remove(before)
+        added.remove(after)
     # look for differences
     changed = {}
     for path in common:
-        path1 = os.path.join(root1, path)
-        path2 = os.path.join(root2, path)
+        if isinstance(path, tuple):
+            path1 = os.path.join(root1, path[0])
+            path2 = os.path.join(root2, path[1])
+            path = path[0]
+        else:
+            path1 = os.path.join(root1, path)
+            path2 = os.path.join(root2, path)
         different, details = diffFile(
             path1,
             path2,
