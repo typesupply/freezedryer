@@ -127,10 +127,14 @@ def compileDiffReport(root, state1, state2, normalize=False, onlyCompareFontDefa
     else:
         state2 = os.path.join(archiveDirectory, state2)
     # locate files that should be ignored
-    state1Settings = readSettings(state1)
-    state1IgnoredPaths = gatherIgnoredPaths(state1, state1Settings["ignore"])
-    state2Settings = readSettings(state2)
-    state2IgnoredPaths = gatherIgnoredPaths(state2, state2Settings["ignore"])
+    state1IgnoredPaths = []
+    if haveSettings(state1):
+        state1Settings = readSettings(state1)
+        state1IgnoredPaths = gatherIgnoredPaths(state1, state1Settings["ignore"])
+    state2IgnoredPaths = []
+    if haveSettings(state2):
+        state2Settings = readSettings(state2)
+        state2IgnoredPaths = gatherIgnoredPaths(state2, state2Settings["ignore"])
     # compile
     differences = diff.diffDirectories(
         state1,
