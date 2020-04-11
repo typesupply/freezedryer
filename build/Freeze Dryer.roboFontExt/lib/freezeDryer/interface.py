@@ -94,9 +94,17 @@ class FDProjectsWindowController(BaseWindowController):
             "Compile Report"
         )
         self.diffsTab.compileReportLine = vanilla.HorizontalLine("auto")
+        self.diffsTab.state1Title = vanilla.TextBox(
+            "auto",
+            "Before:"
+        )
         self.diffsTab.state1PopUpButton = vanilla.PopUpButton(
             "auto",
             []
+        )
+        self.diffsTab.state2Title = vanilla.TextBox(
+            "auto",
+            "After:"
         )
         self.diffsTab.state2PopUpButton = vanilla.PopUpButton(
             "auto",
@@ -254,7 +262,9 @@ class FDProjectsWindowController(BaseWindowController):
         rules = [
             "H:|[compileReportTitle]",
             "H:|[compileReportLine]|",
+            "H:|[state1Title]",
             "H:|[state1PopUpButton(==300)]",
+            "H:|[state2Title]",
             "H:|[state2PopUpButton(==300)]",
             "H:[lenientCheckBox]",
             "H:[onlyDefaultLayerCheckBox]",
@@ -264,7 +274,11 @@ class FDProjectsWindowController(BaseWindowController):
                 "-padding-"
                 "[compileReportLine]"
                 "-padding-"
+                "[state1Title]"
+                "-padding-"
                 "[state1PopUpButton]"
+                "-padding-"
+                "[state2Title]"
                 "-padding-"
                 "[state2PopUpButton]"
                 "-padding-"
