@@ -611,6 +611,14 @@ def makeDiffTable(data, parent):
             td.append(info)
 
 def _fancyRepr(value, attr=None):
+    # XXX hack around a bug in defcon
+    from fontParts.fontshell import RGuideline
+    if isinstance(value, RGuideline):
+        if value.naked().name == "":
+            value.naked().name = None
+            r = repr(value)
+            value.naked().name = ""
+            return r
     if attr == "unicodes":
         value = [hex(value).upper()[2:].zfill(4) for value in value]
         value = "[%s]" % ", ".join(value)
