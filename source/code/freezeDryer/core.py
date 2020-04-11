@@ -243,6 +243,7 @@ def performCommit(root, stamp, message=None, progressBar=None):
         candidates = getDiffStateCandidates(root)
         candidates.remove("Current")
         candidates.remove(stamp)
+        candidates.sort()
         if candidates:
             report = compileDiffReport(
                 root,
