@@ -10,22 +10,12 @@ roboFontVersion = "3.3"
 pycOnly = False
 menuItems = [
     dict(
-        path="menu_initializeProject.py",
-        preferredName="Initialize Project...",
-        shortKey=""
-    ),
-    dict(
-        path="menu_commitProject.py",
-        preferredName="Commit Project...",
-        shortKey=""
-    ),
-    dict(
-        path="menu_projectSettings.py",
-        preferredName="Project Settings...",
+        path="menu_launch.py",
+        preferredName="Projects",
         shortKey=""
     )
 ]
-mainScript = "menu_initialize.py"
+mainScript = "menu_launch.py"
 launchAtStartUp = False
 installAfterBuild = True
 

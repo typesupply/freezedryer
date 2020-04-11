@@ -6,25 +6,9 @@
 	<array>
 		<dict>
 			<key>path</key>
-			<string>menu_initializeProject.py</string>
+			<string>menu_launch.py</string>
 			<key>preferredName</key>
-			<string>Initialize Project...</string>
-			<key>shortKey</key>
-			<string></string>
-		</dict>
-		<dict>
-			<key>path</key>
-			<string>menu_commitProject.py</string>
-			<key>preferredName</key>
-			<string>Commit Project...</string>
-			<key>shortKey</key>
-			<string></string>
-		</dict>
-		<dict>
-			<key>path</key>
-			<string>menu_projectSettings.py</string>
-			<key>preferredName</key>
-			<string>Project Settings...</string>
+			<string>Projects</string>
 			<key>shortKey</key>
 			<string></string>
 		</dict>
@@ -38,7 +22,7 @@
 	<key>launchAtStartUp</key>
 	<false/>
 	<key>mainScript</key>
-	<string>menu_initialize.py</string>
+	<string>menu_launch.py</string>
 	<key>name</key>
 	<string>Freeze Dryer</string>
 	<key>requiresVersionMajor</key>
@@ -46,7 +30,7 @@
 	<key>requiresVersionMinor</key>
 	<string>3</string>
 	<key>timeStamp</key>
-	<real>1585431460.528543</real>
+	<real>1586565472.3661251</real>
 	<key>version</key>
 	<string>0.0</string>
 </dict>

@@ -7,17 +7,18 @@ from fontParts.world import OpenFont
 # Main
 # ----
 
-def makeGlyphSetProof(stateDirectory, stamp):
+def makeGlyphSetProof(stateDirectory, stamp, fileName):
     from freezeDryer.core import gatherUFOPaths
     paths = gatherUFOPaths(stateDirectory)
     fonts = [OpenFont(path, showInterface=False) for path in paths]
     fonts = fontWidthWeightSort(fonts)
+    bot.newDrawing()
     makeAllFontsDefaultLayerPages(stateDirectory, stamp, fonts)
     for font in fonts:
         makeOneFontAllLayersPages(stateDirectory, stamp, font)
         for layer in font.layerOrder:
             makeOneFontOneLayerPages(stateDirectory, stamp, font, layer)
-    path = os.path.join(stateDirectory, stamp + " glyphs.pdf")
+    path = os.path.join(stateDirectory, fileName)
     bot.saveImage(path)
 
 # ---------------

@@ -3,6 +3,7 @@ import shutil
 import glob
 import time
 import plistlib
+import re
 
 # --------
 # Settings
@@ -12,7 +13,10 @@ def getDefaultSettings(root):
     settings = dict(
         formatVersion=0,
         compressUFOs=False,
-        makeGlyphSetProof=True,
+        makeGlyphSetProof=False,
+        makeVisualDiffsReport=False,
+        normalizeDataInVisualDiffsReport=True,
+        onlyDefaultLayerInVisualDiffsReport=True,
         archiveDirectory=getDefaultArchiveDirectory(root),
         ignore=getDefaultIgnorePatterns()
     )
@@ -87,6 +91,61 @@ def initializeProject(root, settings):
         if not os.path.exists(archiveDirectory):
             os.mkdir(archiveDirectory)
 
+
+# -----
+# Diffs
+# -----
+
+statePattern = re.compile("\d\d\d\d-\d\d-\d\d-\d\d-\d\d$")
+
+def getDiffStateCandidates(root):
+    states = []
+    settings = readSettings(root)
+    directory = getArchiveDirectory(root, settings)
+    for fileName in sorted(os.listdir(directory)):
+        if not statePattern.match(fileName):
+            continue
+        states.append(fileName)
+    states.insert(0, "Current")
+    return states
+
+def compileDiffReport(root, state1, state2, normalize=False, onlyCompareFontDefaultLayers=True):
+    from freezeDryer import diff
+    from freezeDryer import diffReport
+    rootSettings = readSettings(root)
+    archiveDirectory = getArchiveDirectory(root, rootSettings)
+    # normalize the paths for safety
+    root = os.path.normpath(root)
+    archiveDirectory = os.path.normpath(archiveDirectory)
+    # locate the states
+    if state1 == "Current":
+        state1 = root
+    else:
+        state1 = os.path.join(archiveDirectory, state1)
+    if state2 == "Current":
+        state2 = root
+    else:
+        state2 = os.path.join(archiveDirectory, state2)
+    # locate files that should be ignored
+    state1Settings = readSettings(state1)
+    state1IgnoredPaths = gatherIgnoredPaths(state1, state1Settings["ignore"])
+    state2Settings = readSettings(state2)
+    state2IgnoredPaths = gatherIgnoredPaths(state2, state2Settings["ignore"])
+    # compile
+    differences = diff.diffDirectories(
+        state1,
+        state2,
+        ignorePaths1=state1IgnoredPaths,
+        ignorePaths2=state2IgnoredPaths,
+        onlyCompareFontDefaultLayers=onlyCompareFontDefaultLayers,
+        normalizeFontContours=normalize,
+        normalizeFontComponents=normalize,
+        normalizeFontAnchors=normalize,
+        normalizeFontGuidelines=normalize
+    )
+    report = diffReport.makeDiffReport(differences)
+    return report
+
 # ------
 # Commit
 # ------
@@ -116,8 +175,16 @@ def canPerformCommit(root):
         return False, "A state directory with this same time stamp already exists."
     return True, stamp
 
-def performCommit(root, stamp, message=None):
+def performCommit(root, stamp, message=None, progressBar=None):
     settings = readSettings(root)
+    if progressBar is not None:
+        tickCount = 4
+        tickCount += settings["compressUFOs"]
+        tickCount += settings["makeVisualDiffsReport"]
+        tickCount += settings["makeGlyphSetProof"]
+        progressBar.setTickCount(tickCount)
+    if progressBar:
+        progressBar.update("Setting up state...")
     archiveDirectory = getArchiveDirectory(root, settings)
     # normalize the paths for safety
     root = os.path.normpath(root)
@@ -139,6 +206,8 @@ def performCommit(root, stamp, message=None):
                 ignore.append(name)
         return ignore
     # copy the whole root to the state directory
+    if progressBar:
+        progressBar.update("Copying files...")
     shutil.copytree(root, stateDirectory, ignore=ignoreArchiveFunction)
     # remove ignored directories
     for path in ignoredPaths:
@@ -154,17 +223,50 @@ def performCommit(root, stamp, message=None):
     # write the message
     if message:
         message = message.encode("utf8")
-        messagePath = os.path.join(stateDirectory, stamp + " message.txt")
+        messagePath = os.path.join(stateDirectory, makeMessageFileName(stamp))
         f = open(messagePath, "wb")
         f.write(message)
         f.close()
     # compress UFOs
     if settings["compressUFOs"]:
+        if progressBar:
+            progressBar.update("Compressing UFOs...")
         recursivelyCompressUFOs(stateDirectory)
+    # make the diffs
+    if settings["makeVisualDiffsReport"]:
+        if progressBar:
+            progressBar.update("Making visual differences report...")
+        candidates = getDiffStateCandidates(root)
+        candidates.remove("Current")
+        candidates.remove(stamp)
+        if candidates:
+            report = compileDiffReport(
+                root,
+                candidates[-1],
+                stamp,
+                normalize=settings["normalizeDataInVisualDiffsReport"],
+                onlyCompareFontDefaultLayers=settings["onlyDefaultLayerInVisualDiffsReport"]
+            )
+            report = report.encode("utf8")
+            reportPath = os.path.join(stateDirectory, makeDiffReportFileName(stamp))
+            f = open(reportPath, "wb")
+            f.write(report)
+            f.close()
     # make the proofs
     if settings["makeGlyphSetProof"]:
+        if progressBar:
+            progressBar.update("Making glyph set proof...")
         from freezeDryer import proof
-        proof.makeGlyphSetProof(stateDirectory, stamp)
+        proof.makeGlyphSetProof(stateDirectory, stamp, makeProofFileName(stamp))
+
+def makeMessageFileName(stamp):
+    return stamp + " message.txt"
+
+def makeProofFileName(stamp):
+    return stamp + " glyphs.pdf"
+
+def makeDiffReportFileName(stamp):
+    return stamp + " diffs.html"
 
 # -----
 # Tools
