@@ -57,26 +57,26 @@ Freeze Dryer doesn't require a standard project structure (see the reference sec
     roman.fea
     roman-c.fea
   /interpolation
-	italic.designspace
+  italic.designspace
     roman.designspace
   /proofs
-  	masters.indd
-  	instances.indd
+    masters.indd
+    instances.indd
   /scripts
     italic starter.py
   /ignore
-  	secret stuff.txt
-  	more secrets.md
+    secret stuff.txt
+    more secrets.md
   /archive <- this is the archive
-  	/2020-03-15-04-02 <- this is a state
-  		2020-03-15-04-02 glyphs.pdf
-  		sketch.ufo
-  	/2020-03-22-19-01 <- this is another state
-  		2020-03-22-19-01 glyphs.pdf
-  		light sketch.ufo
-  		bold sketch.ufo
-  		/proofs
-  		  sketch.indd
+    /2020-03-15-04-02 <- this is a state
+      2020-03-15-04-02 glyphs.pdf
+      sketch.ufo
+    /2020-03-22-19-01 <- this is another state
+      2020-03-22-19-01 glyphs.pdf
+      light sketch.ufo
+      bold sketch.ufo
+      /proofs
+        sketch.indd
 ```
 
 ## Interface

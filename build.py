@@ -3,7 +3,7 @@
 # -----------------
 
 name = "Freeze Dryer"
-version = "0.0"
+version = "0.1"
 developer = "Type Supply"
 developerURL = "http://typesupply.com"
 roboFontVersion = "3.3"
