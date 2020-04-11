@@ -1,7 +1,7 @@
 import os
 import vanilla
 from defconAppKit.windows.baseWindow import BaseWindowController
-from mojo.UI import HTMLView
+from mojo.UI import HelpWindow, HTMLView
 from mojo import extensions
 from freezeDryer import core
 
@@ -323,11 +323,24 @@ class FDProjectsWindowController(BaseWindowController):
         # Load and Launch
 
         self._loadProjects()
+        showWelcome = False
         if len(self.w.projectsList):
             self.w.projectsList.setSelection([0])
+        else:
+            showWelcome = True
         self.w.tabsContainer.tabsButtons.set(0)
         self.tabsButtonsCallback(self.w.tabsContainer.tabsButtons)
         self.w.open()
+        if showWelcome:
+            self.showWelcomeMessage()
+
+    def showWelcomeMessage(self):
+        htmlPath = os.path.dirname(__file__)
+        htmlPath = os.path.dirname(htmlPath)
+        htmlPath = os.path.dirname(htmlPath)
+        htmlPath = os.path.join(htmlPath, "html", "index.html")
+        w = HelpWindow(developer="Type Supply", developerURL="http://typesupply.com")
+        w.setHTMLPath(htmlPath)
 
     # --------
     # Projects
