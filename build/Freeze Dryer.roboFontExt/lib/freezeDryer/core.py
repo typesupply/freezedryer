@@ -102,7 +102,7 @@ def getDiffStateCandidates(root):
     states = []
     settings = readSettings(root)
     directory = getArchiveDirectory(root, settings)
-    for fileName in sorted(os.listdir(directory)):
+    for fileName in reversed(sorted(os.listdir(directory))):
         if not statePattern.match(fileName):
             continue
         states.append(fileName)

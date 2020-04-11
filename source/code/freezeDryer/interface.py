@@ -362,7 +362,9 @@ class FDProjectsWindowController(BaseWindowController):
         items = []
         for path in projects:
             item = self._wrapPath(path)
-            items.append(item)
+            items.append((item["name"], item))
+        items.sort()
+        items = [item[-1] for item in items]
         self.w.projectsList.set(items)
 
     def _writeProjects(self):
@@ -414,6 +416,7 @@ class FDProjectsWindowController(BaseWindowController):
         if item not in self.w.projectsList.get():
             self.w.projectsList.append(item)
             self._writeProjects()
+            self._loadProjects()
 
     def removeProjectButtonCallback(self):
         for i in reversed(self.w.projectsList.getSelection()):
