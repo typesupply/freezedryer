@@ -9,9 +9,24 @@
         </head>
         <body>
         <h1>Freeze Dryer</h1>
-<p>A very minimal, file-based font versioning and backup tool.</p>
-<h2 id="wtf-how-do-i">WTF!? How do I?</h2>
-<p>Before we get to that, some terminology:</p>
+<p>Welcome! You either just launched Freeze Dryer for the first time or you came here looking for specific information. Either way, great! Let me start by saying what this tool is:</p>
+<p><strong><em>Freeze Dryer is a minimal, file-system based versioning system and backup tool specifically developed for font development.</em></strong></p>
+<p>Here is a list of what it does:</p>
+<ol>
+<li>Copy the current state of your project to a directory dedicated to holding states of your project.</li>
+<li>Generate some information (proofs, differences, etc.) about the state of the project.</li>
+<li>Store your states as files that can be viewed in the Finder and opened/edited in the applications of your choice.</li>
+</ol>
+<p>Here is a partial list of what it does not do:</p>
+<ol>
+<li>Support branching or merging.</li>
+<li>Implement file locking.</li>
+<li>Store changes as deltas.</li>
+<li>Do other complex things that version control systems do.</li>
+<li>Require you to use this tool to look at or retrieve data from your project's history.</li>
+</ol>
+<p>Before I get into how to use this tool, let's establish some basics:</p>
+<h3 id="terminology">Terminology</h3>
 <ul>
 <li>project: All of the files for a font development project that can be stored within one directory and any number of sub-directories.</li>
 <li>root: The top most directory in the project.</li>
@@ -19,7 +34,19 @@
 <li>archive: The location where the states are stored.</li>
 <li>commit: Put the current state of the project in the archive.</li>
 </ul>
-<p>Freeze Dryer doesn't require a standard project structure (see the reference section below for complete details on this), but here is one of my project structures (with &lt;- annotations) as an example of these terms:</p>
+<h3 id="working-process">Working Process</h3>
+<p>There's no set process for working with Freeze Dryer. You tell Freeze Dryer about your project, commit states as needed and the end. For example:</p>
+<ol>
+<li>Set up your project and make Freeze Dryer aware of it.</li>
+<li>Make an initial commit.</li>
+<li>Do some type designing and production work until you think it is time to save your progress. When is this? It's up to you. I usually only do it after I've made a complete round of major revisions.</li>
+<li>Commit.</li>
+<li>Repeat steps 3 and 4 until you are "done" with the typeface.</li>
+<li>...</li>
+<li>Profit?</li>
+</ol>
+<h3 id="file-structure">File Structure</h3>
+<p>Freeze Dryer doesn't require a standard project structure (see the reference section below for complete details on this), but here is one of my project structures (with <code>&lt;-</code> annotations) as an example of these terms:</p>
 <div class="codehilite"><pre><span></span><span class="o">/</span><span class="n">Inverso</span> <span class="o">&lt;-</span> <span class="n">this</span> <span class="n">is</span> <span class="n">a</span> <span class="n">project</span> <span class="n">and</span> <span class="n">this</span> <span class="n">is</span> <span class="n">the</span> <span class="n">root</span> <span class="n">of</span> <span class="n">the</span> <span class="n">project</span>
   <span class="n">Master</span><span class="o">-</span><span class="n">Primo.ufo</span>
   <span class="n">Master</span><span class="o">-</span><span class="n">Primo</span> <span class="n">Italico.ufo</span>
@@ -55,21 +82,46 @@
 </pre></div>
 
 
-<p>Okay, so, here's how to use it:</p>
+<h2 id="interface">Interface</h2>
+<p>Almost all of the time that you need to use this tool, you'll be using the <em>Projects</em> window.</p>
+<h3 id="projects-window">Projects Window</h3>
+<p><img alt="Main Window" src="main-commit-section.png" /></p>
+<p>The <em>Projects</em> window contains two sections:</p>
+<h4>Projects List</h4>
+<p>The projects list shows all of the projects known to Freeze Dryer. To add a project, press the "+" button and select the root of the project you want to add. This will initialize the project for use in Freeze Dryer. (This is a non-destructive process that only adds a settings file to the root.) To remove a project, select the project in the list and press the "-" button. (This is a non-destructive process that only removes the project from the list of projects known to Freeze Dryer. It doesn't remove any files.)</p>
+<h4>Project Action Panes</h4>
+<p>The project action panes allow you to do stuff with and to your project.</p>
+<h5>Commit</h5>
+<p><img alt="Commit Pane" src="main-commit-section.png" /></p>
+<p>The <em>Commit</em> pane allows you to commit the current state of the project to the archive. A commit action will copy all of the files and directories (unless they are set to be ignored) in the root's into a state directory in the archive.</p>
+<p>There are two panels:</p>
 <ol>
-<li><strong>Initialize a project.</strong> Select the "Initialize Project..." menu item and select the root directory of your project. This can be an existing project you are working on with files and stuff already in it. This will create a file named <code>freeze dryer.plist</code> in the project's root. The project's settings window will open.</li>
-<li><strong>Set your settings if you don't like the defaults.</strong> The default location for the archive is a directory in the root named <code>archive</code> but you can pick any directory you way. It can even be a completely separate location, such as a sub-directory in your Dropbox directory. You can have the UFOs compressed to UFOZs if you want to not make Dropbox have a freak out.</li>
-<li><strong>If you already have some files in your project, make an initial commit.</strong> See that "Commit" tab? Click it, type "Initial Commit" into the text box and press the "Commit State" button.</li>
-<li><strong>Do some type designing.</strong> When you are ready to commit to the archive, move to the next step. When should you commit? That's up to you.</li>
-<li><strong>Commit your changes.</strong> Select the "Commit Project..." menu item. Select your project's root directory. The commit window will open. Type a message describing why you are putting this in the archive. Or don't type anything. It's optional. Press the "Commit State" button.</li>
+<li>The top panel allows you to write a message about the commit. For example, "I made some changes to some stuff. I added fractions."</li>
+<li>The bottom panel shows you a list of files and directories that will be ignored during the commit. You can't edit this list directly. You define what you want to be ignored in the settings.</li>
 </ol>
-<p>Repeat steps 4-5 until you are completely finished with the project. If you want to see a state, go into the archive directory in the Finder and look at it. It's just a regular directory containing regular files.</p>
-<p>If you need to change your project settings, you can do so at any time by sellecting the "Project Settings..." menu item and selecting your project's root directory.</p>
-<p>That's all it does. The end.</p>
+<p>When you are ready, press the <em>Commit State</em> button and everything will happen.</p>
+<h5>Differences</h5>
+<p><img alt="Differences Pane" src="main-differences-section.png" /></p>
+<p>The <em>Differences</em> pane allows you to view differences between states of your project. An example of the report can be seen <a href="example-diffs-report.html">here</a>. There are some options when comparing the states:</p>
+<ul>
+<li><em>Before:</em> Use this to select the first state.</li>
+<li><em>After:</em> Use this to select the second state.</li>
+<li><em>Lenient Comparisons</em> This will try to automatically match font data such as contours, components, etc. regardless of their order in the UFOs to reduce the number of reported differences.</li>
+<li><em>Only Default Layer</em> This will ignore all layers in UFOs except the default layer. This is useful if you keep sketches and other data that is irrelevant to the main content of the UFOs.</li>
+</ul>
+<p>When you are ready, press the <em>Compile</em> button and wait (maybe a while) for the result to appear in a new window.</p>
+<h5>Settings</h5>
+<p><img alt="Settings Pane" src="main-settings-section.png" /></p>
+<p>The <em>Settings</em> pane allows you to view and edit the Freeze Dryer settings for the selected project.</p>
+<ul>
+<li><em>Archive Location</em> This is where your archive is located. By default, this is located in a directory named "archive" at the root of your project. You can change it.</li>
+<li><em>Convert UFO to UFOZ</em> This will convert all UFOs in the state being committed to UFOZs.</li>
+<li><em>Make a Glyph Set Proof</em> This will make a proof showing all glyphs in all UFOs in the state being committed.</li>
+<li><em>Make Visual Differences Report</em> This will generate a differences report between the state being committed and the previous state. The options are the same as the ones in the <em>Differences</em> pane.</li>
+<li><em>Ignore</em> If you want files to be ignored, you can specify them here with file name patterns. The pattern matching syntax is the same as Python's <a href="https://docs.python.org/3.5/library/glob.html">glob module</a> syntax. If a pattern starts with <code>/</code>  the pattern is relative to the root of the project. Otherwise the pattern may match at any level within the project.</li>
+</ul>
 <h2 id="reference">Reference</h2>
-<h3 id="ignoring-files">Ignoring Files</h3>
-<p>If you want files to be ignored, you can specify them in the settings window. The pattern matching syntax is the same as Python's <a href="https://docs.python.org/3.5/library/glob.html">glob module</a> syntax. If a pattern starts with <code>/</code>  the pattern is relative to the root of the project. Otherwise the pattern may also match at any level within the project.</p>
-<h3 id="file-structure">File Structure</h3>
+<h3 id="file-structure_1">File Structure</h3>
 <p>There is no specific structure. There are, however, some reserved file names and locations:</p>
 <h4>/ignore</h4>
 <p>Anything inside of a root level directory named <code>ignore</code> will not be included in a state.</p>
@@ -82,7 +134,8 @@
 <p>The following files will be written as needed:</p>
 <ul>
 <li>(time stamp) message.txt (optional): This will contain a message given by the user during commit.</li>
-<li>(time stamp) glyphs.txt (optional): This will contain a proof of all glyphs in all UFOs in the state.</li>
+<li>(time stamp) diffs.html (optional): This will contain a report of differences between this and the previous state.</li>
+<li>(time stamp) glyphs.pdf (optional): This will contain a proof of all glyphs in all UFOs in the state.</li>
 </ul>
         </body>
         </html>
