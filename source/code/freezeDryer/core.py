@@ -57,6 +57,7 @@ def getDefaultIgnorePatterns():
     patterns = """
     /archive
     /ignore
+    /Skateboard Previews
     *.idlk
     """
     patterns = [line.strip() for line in patterns.splitlines() if line.strip()]
