@@ -1,6 +1,6 @@
 import os
-import vanilla
-from defconAppKit.windows.baseWindow import BaseWindowController
+import AppKit
+import ezui
 from mojo.UI import HelpWindow, HTMLView
 from mojo import extensions
 from freezeDryer import core
@@ -11,345 +11,152 @@ from freezeDryer import core
 
 projectsDefaultsKey = "com.typesupply.FreezeDryer.projects"
 
-class FDProjectsWindowController(BaseWindowController):
+class FDProjectsWindowController(ezui.WindowController):
 
-    def __init__(self):
-        self.root = None
-        self.settings = {}
+    root = None
+    settings = None
 
-        self.w = vanilla.Window(
-            (800, 600),
-            "Freeze Dryer"
+    def build(self):
+        content = """
+        = HorizontalStack
+
+        |-------------|     @projectsTable
+        |             |
+        |-------------|
+        > (+-)              @projectsTableAddRemoveButton
+        > ({arrow.right})   @projectsGoToFolderButton
+
+        * Tabs @projectTabs
+
+          > Tab: Changes
+           >> * HorizontalStack     @changesFilesStack
+            >>> * VerticalStack
+             >>>> Changed Files:
+             >>>> |--|              @changesChangedFilesTable
+            >>> * VerticalStack
+             >>>> Ignored Files:
+             >>>> |--|              @changesIgnoredFilesTable
+           >> Message:
+           >> [[__]]                @changesMessageEditor
+           >> * HorizontalStack
+            >>> (Commit)            @changesCommitButton
+            >>> (Refresh)           @changesRefreshButton
+
+          > Tab: History = HorizontalStack
+           >> |--|                  @historyCommitTable
+           >> * VerticalStack       @historyStateStack
+            >>> |--|                @historyLogTable
+            >>> * WebView           @historyReportView
+
+          > Tab: Settings
+           >> * TwoColumnForm                 @settingsForm
+            >>> : Location:
+            >>> /archive                      @settingsLocationLabel
+            >>> (...)                         @settingsLocationActionButton
+            >>> : Compression:
+            >>> [ ] Convert to UFOZ           @settingsConvertToUFOZCheckbox
+            >>> ( ) Use Aliases               @settingsAliasRadioGroup
+            >>> ( ) Use Aliases Above 1 MB
+            >>> (X) Never Use Aliases
+            >>> : Glyph Set Proof:
+            >>> [ ] Create                    @settingsGlyphSetProofCheckbox
+            >>> : Visual Differences Report:
+            >>> [ ] Create                    @settingsVisualDiffReportCheckbox
+            >>> [ ] Lenient Comparisons       @settingsVisualDiffReportLenientCheckbox
+            >>> [ ] Only Default Layer        @settingsVisualDiffReportDefaultLayerCheckbox
+            >>> : Ignore:
+            >>> [[__]]                        @settingsIgnorePatternsEditor
+        """
+        descriptionData = dict(
+            content=dict(
+                distribution="fill"
+            ),
+
+            projectsTable=dict(
+                width=200,
+                columnDescriptions=[
+                    dict(
+                        identifier="name"
+                    )
+                ],
+                allowsMultipleSelection=False
+            ),
+
+            projectTabs=dict(
+                width="fill"
+            ),
+
+            changesFilesStack=dict(
+                distribution="fillEqually",
+                height="fill"
+            ),
+            changesMessageEditor=dict(
+                height=100
+            ),
+            changesRefreshButton=dict(
+                gravity="trailing"
+            ),
+
+            historyCommitTable=dict(
+                width=150
+            ),
+            historyStateStack=dict(
+            ),
+            historyLogTable=dict(
+                height=200
+            ),
+            historyReportView=dict(
+            ),
+
+            settingsForm=dict(
+                titleColumnWidth=200,
+                itemColumnWidth=400,
+                height="fill",
+                width=0
+            ),
+            settingsLocationLabel=dict(
+                width="fill"
+            ),
+            settingsLocationActionButton=dict(
+                itemDescriptions=[
+                    dict(
+                        identifier="selectNewArchiveLocation",
+                        text="Select Location…"
+                    ),
+                    dict(
+                        identifier="useDefaultArchiveLocation",
+                        text="Use Default Location"
+                    )
+                ]
+            ),
+            settingsIgnorePatternsEditor=dict(
+                height=300,
+            )
         )
-
-        # --------
-        # Projects
-        # --------
-
-        self.w.projectsList = vanilla.List(
-            "auto",
-            [],
-            columnDescriptions=[
-                dict(
-                    title="name"
-                )
-            ],
-            selectionCallback=self.projectsListSelectionCallback,
-            allowsMultipleSelection=False,
-            showColumnTitles=False,
-            drawFocusRing=False
+        self.w = ezui.EZWindow(
+            title="Freeze Dryer",
+            content=content,
+            descriptionData=descriptionData,
+            controller=self,
+            size=(1000, 800),
+            minSize=(500, 500)
         )
-        self.w.projectsSegmentedButtons = vanilla.SegmentedButton(
-            "auto",
-            [
-                dict(title="+"),
-                dict(title="-")
-            ],
-            selectionStyle="momentary",
-            sizeStyle="regular",
-            callback=self.projectsSegmentedButtonsCallback
-        )
+        field = self.w.getItem("settingsLocationLabel").getNSTextField()
+        field.setLineBreakMode_(AppKit.NSLineBreakByTruncatingHead)
 
-        # -------
-        # Project
-        # -------
+        # frequently referenced items
+        self.projectsTable = self.w.getItem("projectsTable")
 
-        self.w.tabsContainer = vanilla.Group("auto")
-        self.w.tabsContainer.line = vanilla.HorizontalLine("auto")
-        self.w.tabsContainer.flex1 = vanilla.Group("auto")
-        self.w.tabsContainer.tabsButtons = vanilla.SegmentedButton(
-            "auto",
-            [
-                dict(title="Commit"),
-                dict(title="Differences"),
-                dict(title="Settings")
-            ],
-            sizeStyle="regular",
-            callback=self.tabsButtonsCallback
-        )
-        self.w.tabsContainer.flex2 = vanilla.Group("auto")
-        self.commitTab = self.w.tabsContainer.commitTab = vanilla.Group("auto")
-        self.diffsTab = self.w.tabsContainer.diffsTab = vanilla.Group("auto")
-        self.settingsTab = self.w.tabsContainer.settingsTab = vanilla.Group("auto")
+    # Load and Launch
 
-        # Commit
-
-        self.commitTab.messageTextEditor = vanilla.TextEditor(
-            "auto"
-        )
-        self.commitTab.ignoredTextEditor = vanilla.TextEditor(
-            "auto",
-            readOnly=True
-        )
-        self.commitTab.commitButton = vanilla.Button(
-            "auto",
-            "Commit State",
-            callback=self.commitButtonCallback
-        )
-
-        # Diffs
-
-        self.diffsTab.compileReportTitle = vanilla.TextBox(
-            "auto",
-            "Compile Report"
-        )
-        self.diffsTab.compileReportLine = vanilla.HorizontalLine("auto")
-        self.diffsTab.state1Title = vanilla.TextBox(
-            "auto",
-            "Before:"
-        )
-        self.diffsTab.state1PopUpButton = vanilla.PopUpButton(
-            "auto",
-            []
-        )
-        self.diffsTab.state2Title = vanilla.TextBox(
-            "auto",
-            "After:"
-        )
-        self.diffsTab.state2PopUpButton = vanilla.PopUpButton(
-            "auto",
-            []
-        )
-        self.diffsTab.lenientCheckBox = vanilla.CheckBox(
-            "auto",
-            "Lenient Comparisons"
-        )
-        self.diffsTab.onlyDefaultLayerCheckBox = vanilla.CheckBox(
-            "auto",
-            "Only Default Layer"
-        )
-        self.diffsTab.compileReportButton = vanilla.Button(
-            "auto",
-            "Compile",
-            callback=self.diffsProcessButtonCallback
-        )
-
-        # Settings
-
-        self.settingsTab.archiveLocationTitle = vanilla.TextBox(
-            "auto",
-            "Archive Location:"
-        )
-        self.settingsTab.archiveLocationLine = vanilla.HorizontalLine("auto")
-        self.settingsTab.archiveLocationTextBox = vanilla.TextBox(
-            "auto",
-            ""
-        )
-        self.settingsTab.archiveLocationChangeButton = vanilla.Button(
-            "auto",
-            "Change",
-            callback=self.settingsChooseLocationButtonCallback
-        )
-        self.settingsTab.archiveLocationDefaultButton = vanilla.Button(
-            "auto",
-            "Use Standard",
-            callback=self.settingsArchiveLocationDefaultButtonCallback
-        )
-
-        self.settingsTab.filesTitle = vanilla.TextBox(
-            "auto",
-            "Files:"
-        )
-        self.settingsTab.filesLine = vanilla.HorizontalLine("auto")
-        self.settingsTab.compressUFOsCheckBox = vanilla.CheckBox(
-            "auto",
-            "Convert UFO to UFOZ",
-            callback=self.settingsCompressUFOsCheckBoxCallback
-        )
-        self.settingsTab.makeGlyphSetProofCheckBox = vanilla.CheckBox(
-            "auto",
-            "Make Glyph Set Proof",
-            callback=self.settingsMakeGlyphSetProofCheckBoxCallback
-        )
-        self.settingsTab.makeVisualDiffsReportCheckBox = vanilla.CheckBox(
-            "auto",
-            "Make Visual Differences Report",
-            callback=self.settingsMakeVisualDiffsReportCheckBoxCallback
-        )
-        self.settingsTab.lenientVisualDiffsReportCheckBox = vanilla.CheckBox(
-            "auto",
-            "Lenient Comparisons",
-            callback=self.settingsLenientVisualDiffsReportCheckBoxCallback
-        )
-        self.settingsTab.onlyDefaultLayerVisualDiffsReportCheckBox = vanilla.CheckBox(
-            "auto",
-            "Only Default Layer",
-            callback=self.settingsOnlyDefaultLayerVisualDiffsReportCheckBoxCallback
-        )
-        self.settingsTab.ignoreTitle = vanilla.TextBox(
-            "auto",
-            "Ignore:"
-        )
-        self.settingsTab.ignoreTextEditor = vanilla.TextEditor(
-            "auto",
-            "",
-            callback=self.settingsIgnoreTextEditorCallback
-        )
-
-        # ----------------
-        # Auto Positioning
-        # ----------------
-
-        metrics = dict(
-            margin=15,
-            padding=10,
-            vButtonCenter=25,
-            sectionPadding=30,
-            indent=20
-        )
-
-        # Base
-
-        rules = [
-            "H:|-margin-[projectsList(==250)]-margin-[tabsContainer]-margin-|",
-            "H:|-margin-[projectsSegmentedButtons]",
-            "V:|-margin-[projectsList]-padding-[projectsSegmentedButtons]-margin-|",
-            "V:|-margin-[tabsContainer]-margin-|",
-        ]
-        self.w.addAutoPosSizeRules(rules, metrics)
-
-        # Project
-
-        rules = [
-            "H:|[line]|",
-            "H:|-[flex1]-[tabsButtons]-[flex2(==flex1)]-|",
-            "H:|[commitTab]|",
-            "H:|[diffsTab]|",
-            "H:|[settingsTab]|",
-            "V:|"
-                "-vButtonCenter-"
-                "[line]",
-            "V:|"
-                "-margin-"
-                "[tabsButtons]",
-            "V:"
-                "[tabsButtons]"
-                "-margin-"
-                "[commitTab]"
-                "|",
-            "V:"
-                "[tabsButtons]"
-                "-margin-"
-                "[diffsTab]"
-                "|",
-            "V:"
-                "[tabsButtons]"
-                "-margin-"
-                "[settingsTab]"
-                "|",
-
-        ]
-        self.w.tabsContainer.addAutoPosSizeRules(rules, metrics)
-
-        # Commit
-
-        rules = [
-            "H:|[messageTextEditor]|",
-            "H:|[ignoredTextEditor]|",
-            "H:[commitButton]|",
-            "V:|"
-                "[messageTextEditor]"
-                "-padding-"
-                "[ignoredTextEditor(==150)]"
-                "-padding-"
-                "[commitButton]"
-                "|",
-        ]
-        self.commitTab.addAutoPosSizeRules(rules, metrics)
-
-        # Diffs
-
-        rules = [
-            "H:|[compileReportTitle]",
-            "H:|[compileReportLine]|",
-            "H:|[state1Title]",
-            "H:|[state1PopUpButton(==300)]",
-            "H:|[state2Title]",
-            "H:|[state2PopUpButton(==300)]",
-            "H:[lenientCheckBox]",
-            "H:[onlyDefaultLayerCheckBox]",
-            "H:[compileReportButton]",
-            "V:|"
-                "[compileReportTitle]"
-                "-padding-"
-                "[compileReportLine]"
-                "-padding-"
-                "[state1Title]"
-                "-padding-"
-                "[state1PopUpButton]"
-                "-padding-"
-                "[state2Title]"
-                "-padding-"
-                "[state2PopUpButton]"
-                "-padding-"
-                "[lenientCheckBox]"
-                "[onlyDefaultLayerCheckBox]"
-                "-margin-"
-                "[compileReportButton]",
-        ]
-        self.diffsTab.addAutoPosSizeRules(rules, metrics)
-
-        # Settings
-
-        rules = [
-            "H:|[archiveLocationTitle]|",
-            "H:|[archiveLocationLine]|",
-            "H:|[archiveLocationTextBox]|",
-            "H:|[archiveLocationChangeButton(==archiveLocationDefaultButton)]-padding-[archiveLocationDefaultButton(==archiveLocationChangeButton)]",
-            "H:|[filesTitle]|",
-            "H:|[filesLine]|",
-            "H:|[compressUFOsCheckBox]",
-            "H:|[makeGlyphSetProofCheckBox]",
-            "H:|[makeVisualDiffsReportCheckBox]",
-            "H:|-indent-[lenientVisualDiffsReportCheckBox]",
-            "H:|-indent-[onlyDefaultLayerVisualDiffsReportCheckBox]",
-            "H:|[ignoreTitle]|",
-            "H:|[ignoreTextEditor]|",
-
-            "V:|"
-                "[archiveLocationTitle]"
-                "-padding-"
-                "[archiveLocationLine]"
-                "-padding-"
-                "[archiveLocationTextBox]",
-            "V:"
-                "[archiveLocationTextBox]"
-                "-padding-"
-                "[archiveLocationChangeButton]",
-            "V:"
-                "[archiveLocationTextBox]"
-                "-padding-"
-                "[archiveLocationDefaultButton]",
-
-            "V:"
-                "[archiveLocationDefaultButton]"
-                "-sectionPadding-"
-                "[filesTitle]"
-                "-padding-"
-                "[filesLine]"
-                "-padding-"
-                "[compressUFOsCheckBox]"
-                "[makeGlyphSetProofCheckBox]"
-                "[makeVisualDiffsReportCheckBox]"
-                "[lenientVisualDiffsReportCheckBox]"
-                "[onlyDefaultLayerVisualDiffsReportCheckBox]"
-                "-padding-"
-                "[ignoreTitle]"
-                "-padding-"
-                "[ignoreTextEditor(==100)]"
-        ]
-        self.settingsTab.addAutoPosSizeRules(rules, metrics)
-
-        # Load and Launch
-
+    def started(self):
         self._loadProjects()
         showWelcome = False
-        if len(self.w.projectsList):
-            self.w.projectsList.setSelection([0])
+        if len(self.projectsTable.get()):
+            self.projectsTable.setSelectedIndexes([0])
+            self.projectsTableSelectionCallback(self.projectsTable)
         else:
             showWelcome = True
-        self.w.tabsContainer.tabsButtons.set(0)
-        self.tabsButtonsCallback(self.w.tabsContainer.tabsButtons)
         self.w.open()
         if showWelcome:
             self.showWelcomeMessage()
@@ -379,32 +186,25 @@ class FDProjectsWindowController(BaseWindowController):
             items.append((item["name"], item))
         items.sort()
         items = [item[-1] for item in items]
-        self.w.projectsList.set(items)
+        self.projectsTable.set(items)
 
     def _writeProjects(self):
         projects = []
-        for item in self.w.projectsList.get():
+        for item in self.projectsTable.get():
             projects.append(item["path"])
         extensions.setExtensionDefault(projectsDefaultsKey, projects)
 
-    def projectsListSelectionCallback(self, sender):
-        selection = sender.getSelection()
+    def projectsTableSelectionCallback(self, sender):
+        selection = sender.getSelectedIndexes()
         if not selection:
             self.disableProjectInterface()
         else:
             self.enableProjectInterface()
-            item = sender[selection[0]]
+            item = sender.get()[selection[0]]
             path = item["path"]
             self.loadProject(path)
 
-    def projectsSegmentedButtonsCallback(self, sender):
-        value = sender.get()
-        if value == 0:
-            self.addProjectButtonCallback()
-        elif value == 1:
-            self.removeProjectButtonCallback()
-
-    def addProjectButtonCallback(self):
+    def projectsTableAddRemoveButtonAddCallback(self, sender):
         self.showGetFolder(callback=self._addProjectButtonCallback)
 
     def _addProjectButtonCallback(self, result):
@@ -427,15 +227,25 @@ class FDProjectsWindowController(BaseWindowController):
                 core.initializeProject(directory, settings)
         # do it
         item = self._wrapPath(directory)
-        if item not in self.w.projectsList.get():
-            self.w.projectsList.append(item)
+        items = list(self.projectsTable.get())
+        if item not in items:
+            items.append(item)
+            self.projectsTable.set(items)
             self._writeProjects()
             self._loadProjects()
 
-    def removeProjectButtonCallback(self):
-        for i in reversed(self.w.projectsList.getSelection()):
-            del self.w.projectsList[i]
+    def projectsTableAddRemoveButtonRemoveCallback(self, sender):
+        items = list(self.projectsTable.get())
+        for i in reversed(self.projectsTable.getSelectedIndexes()):
+            del items[i]
+        self.projectsTable.set(items)
         self._writeProjects()
+
+    def projectsGoToFolderButtonCallback(self, sender):
+        if self.root is None:
+            return
+        url = AppKit.NSURL.fileURLWithPath_(self.root)
+        AppKit.NSWorkspace.sharedWorkspace().openURL_(url)
 
     # -------
     # Project
@@ -452,34 +262,28 @@ class FDProjectsWindowController(BaseWindowController):
             self.root = path
             self.settings = core.readSettings(self.root)
             self.loadSettings()
-            self.loadDiffSettings()
             self.loadCommitSettings()
 
     def disableProjectInterface(self):
-        self.w.tabsContainer.show(False)
+        self.w.getItem("projectTabs").show(False)
 
     def enableProjectInterface(self):
-        self.w.tabsContainer.show(True)
+        self.w.getItem("projectTabs").show(True)
 
-    def tabsButtonsCallback(self, sender):
-        index = sender.get()
-        self.commitTab.show(index == 0)
-        self.diffsTab.show(index == 1)
-        self.settingsTab.show(index == 2)
-
-    # Commit
-    # ------
+    # Changes
+    # -------
 
     def loadCommitSettings(self):
-        self.updateIgnoredTextEditor()
+        self.updateIgnoredFilesTable()
 
-    def commitButtonCallback(self, sender):
+    def changesCommitButtonCallback(self, sender):
         possible, message = core.canPerformCommit(self.root)
         if not possible:
             self.showMessage("The commit could not be completed.", message)
             return
         timeStamp = message
-        message = self.commitTab.messageTextEditor.get()
+        messageEditor = self.w.getItem("changesMessageEditor")
+        message = messageEditor.get()
         if not message:
             message = None
         progress = self.startProgress("Performing commit...")
@@ -487,173 +291,68 @@ class FDProjectsWindowController(BaseWindowController):
             core.performCommit(self.root, timeStamp, message, progressBar=progress)
         finally:
             progress.close()
-            self.commitTab.messageTextEditor.set("")
+            messageEditor.set("")
 
-    def updateIgnoredTextEditor(self):
+    def updateIgnoredFilesTable(self):
         ignorePatterns = self.settings["ignore"]
         ignoredPaths = core.gatherIgnoredPaths(self.root, ignorePatterns)
         if not ignoredPaths:
-            text = "No files will be ignored."
+            items = []
         else:
-            text = ["Ignored Files:"]
-            text += [os.path.relpath(path, self.root) for path in ignoredPaths]
-            text = "\n".join(text)
-        self.commitTab.ignoredTextEditor.set(text)
-
-    # Diffs
-    # -----
-
-    def loadDiffSettings(self):
-        states = core.getDiffStateCandidates(self.root)
-        self.diffsTab.state1PopUpButton.setItems(states)
-        self.diffsTab.state2PopUpButton.setItems(states)
-
-    def diffsProcessButtonCallback(self, sender):
-        state1 = self.diffsTab.state1PopUpButton.get()
-        state1 = self.diffsTab.state1PopUpButton.getItems()[state1]
-        state2 = self.diffsTab.state2PopUpButton.get()
-        state2 = self.diffsTab.state2PopUpButton.getItems()[state2]
-        if state1 == state2:
-            self.showMessage(
-                "There are no differences.",
-                "You picked the same state."
-            )
-            return
-        report = core.compileDiffReport(
-            self.root,
-            state1,
-            state2,
-            normalize=self.diffsTab.lenientCheckBox.get(),
-            onlyCompareFontDefaultLayers=self.diffsTab.onlyDefaultLayerCheckBox.get()
-        )
-        fileName = "%s - %s diffs.html" % (state1, state2)
-        FDDiffWindowController(report, self.root, fileName)
+            items = [os.path.relpath(path, self.root) for path in ignoredPaths]
+        self.w.getItem("changesIgnoredFilesTable").set(items)
 
     # Settings
     # --------
 
-    def loadSettings(self):
-        self.settingsTab.archiveLocationTextBox.set(
-            self.settings["archiveDirectory"]
-        )
-        self.settingsTab.compressUFOsCheckBox.set(
-            self.settings["compressUFOs"]
-        )
-        self.settingsTab.makeGlyphSetProofCheckBox.set(
-            self.settings["makeGlyphSetProof"]
-        )
-        self.settingsTab.makeVisualDiffsReportCheckBox.set(
-            self.settings["makeVisualDiffsReport"],
-        )
-        self.settingsTab.lenientVisualDiffsReportCheckBox.set(
-            self.settings["normalizeDataInVisualDiffsReport"]
-        )
-        self.settingsTab.onlyDefaultLayerVisualDiffsReportCheckBox.set(
-            self.settings["onlyDefaultLayerInVisualDiffsReport"]
-        )
-        self.settingsTab.ignoreTextEditor.set(
-            "\n".join(self.settings["ignore"])
-        )
+    _formToDefaults = dict(
+        settingsLocationLabel="archiveDirectory",
+        settingsConvertToUFOZCheckbox="compressUFOs",
+        settingsGlyphSetProofCheckbox="makeGlyphSetProof",
+        settingsVisualDiffReportCheckbox="makeVisualDiffsReport",
+        settingsVisualDiffReportLenientCheckbox="normalizeDataInVisualDiffsReport",
+        settingsVisualDiffReportDefaultLayerCheckbox="onlyDefaultLayerInVisualDiffsReport",
+        # handled specially:
+        # - alias
+        # - ignore
+    )
 
-    def _storeSettings(self):
+    def loadSettings(self):
+        formContents = {
+            itemIdentifier : self.settings[defaultsKey]
+            for itemIdentifier, defaultsKey in self._formToDefaults.items()
+        }
+        formContents["settingsIgnorePatternsEditor"] = "\n".join(self.settings["ignore"])
+        form = self.w.getItem("settingsForm")
+        form.setItemValues(formContents)
+
+    def storeSettings(self):
         core.writeSettings(self.root, self.settings)
 
-    def _updateSettingsArchiveLocation(self):
-        self.settingsTab.archiveLocationTextBox.set(
-            self.settings["archiveDirectory"]
-        )
+    def settingsFormCallback(self, sender):
+        values = self.w.getItem("settingsForm").getItemValues()
+        for itemIdentifier, defaultsKey in self._formToDefaults.items():
+            settings[defaultsKey] = values["itemIdentifier"]
+        settings["ignore"] = [
+            line for line
+            in values["settingsIgnorePatternsEditor"].splitlines()
+            if line.strip()
+        ]
+        self.storeSettings()
 
-    def settingsChooseLocationButtonCallback(self, sender):
+    def selectNewArchiveLocationCallback(self, sender):
         self.showGetFolder(
-            callback=self._settingsChooseLocationButtonCallback
+            callback=self._selectNewArchiveLocationResultCallback
         )
 
-    def _settingsChooseLocationButtonCallback(self, result):
+    def _selectNewArchiveLocationResultCallback(self, result):
         if result:
             self.settings["archiveDirectory"] = result[0]
-            self._storeSettings()
-            self._updateSettingsArchiveLocation()
+            self.storeSettings()
+            self.loadSettings()
 
-    def settingsArchiveLocationDefaultButtonCallback(self, sender):
+    def useDefaultArchiveLocationCallback(self, sender):
         self.settings["archiveDirectory"] = core.getDefaultArchiveDirectory(self.root)
-        self._storeSettings()
-        self._updateSettingsArchiveLocation()
+        self.storeSettings()
+        self.loadSettings()
 
-    def settingsCompressUFOsCheckBoxCallback(self, sender):
-        self.settings["compressUFOs"] = sender.get()
-        self._storeSettings()
-
-    def settingsMakeGlyphSetProofCheckBoxCallback(self, sender):
-        self.settings["makeGlyphSetProof"] = sender.get()
-        self._storeSettings()
-
-    def settingsMakeVisualDiffsReportCheckBoxCallback(self, sender):
-        self.settings["makeVisualDiffsReport"] = sender.get()
-        self._storeSettings()
-
-    def settingsLenientVisualDiffsReportCheckBoxCallback(self, sender):
-        self.settings["normalizeDataInVisualDiffsReport"] = sender.get()
-        self._storeSettings()
-
-    def settingsOnlyDefaultLayerVisualDiffsReportCheckBoxCallback(self, sender):
-        self.settings["onlyDefaultLayerInVisualDiffsReport"] = sender.get()
-        self._storeSettings()
-
-    def settingsIgnoreTextEditorCallback(self, sender):
-        patterns = [line.strip() for line in sender.get().splitlines() if line.strip()]
-        self.settings["ignore"] = patterns
-        self._storeSettings()
-        self.updateIgnoredTextEditor()
-
-
-# -----
-# Diffs
-# -----
-
-class FDDiffWindowController(BaseWindowController):
-
-    def __init__(self, html, directory, fileName):
-        self.html = html
-        self.directory = directory
-        self.fileName = fileName
-
-        self.w = vanilla.Window((800, 500), minSize=(200, 200))
-        self.w.htmlView = HTMLView("auto")
-        self.w.htmlView.setHTML(html)
-        self.w.saveButton = vanilla.Button(
-            "auto",
-            "Save",
-            callback=self.saveButtonCallback
-        )
-
-        metrics = dict(
-            margin=15,
-            padding=10
-        )
-        rules = [
-            "H:|[htmlView]|",
-            "H:[saveButton]-margin-|",
-            "V:|"
-                "[htmlView]"
-                "-padding-"
-                "[saveButton]"
-                "-margin-"
-                "|"
-        ]
-        self.w.addAutoPosSizeRules(rules, metrics)
-
-        self.w.open()
-
-    def saveButtonCallback(self, sender):
-        self.showPutFile(
-            ["html"],
-            callback=self._saveButtonCallback,
-            fileName=self.fileName,
-            directory=self.directory
-        )
-
-    def _saveButtonCallback(self, result):
-        if result:
-            f = open(result, "w")
-            f.write(self.html)
-            f.close()
